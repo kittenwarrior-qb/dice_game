@@ -7,8 +7,6 @@ let rounds = 1;
 let usedDiceFaces = [];
 let previousScores = []; // To keep track of the previous scores after each round
 
-const socket = io("http://localhost:3000");
-
 // _____________________________________VALUE________________________________________
 
 const add_player_input = document.getElementById("add_player_input");
@@ -25,7 +23,6 @@ const reset_game_button = document.getElementById("reset_game_button");
 add_player_button.addEventListener("click", function () {
   const player_name = add_player_input.value.trim();
   if (player_name) {
-    socket.emit("addPlayer", player_name); // Gửi thông tin người chơi lên server
     player_list.push(player_name);
     player_points[player_name] = 0;
     add_player_input.value = "";
@@ -33,17 +30,11 @@ add_player_button.addEventListener("click", function () {
   }
 });
 
-socket.on("updatePlayerList", (players) => {
-  player_list = players;
-  updatePlayerList();
-});
-
 start_button.addEventListener("click", function () {
   if (player_list.length < 2) {
     alert("Please add at least 2 players.");
     return;
   }
-  socket.emit("startGame"); // Gửi sự kiện bắt đầu trò chơi lên server
   roll_dice_button.disabled = false;
   start_button.disabled = true;
   document.getElementById("gameArea").style.display = "block";
@@ -66,39 +57,73 @@ reset_game_button.addEventListener("click", function () {
 let currentRoundResults = [];
 
 roll_dice_button.addEventListener("click", function () {
-  socket.emit("rollDice", player_list[currentPlayerIndex]); // Gửi yêu cầu đổ xúc xắc lên server
-});
+  const randomPlayer = player_list[currentPlayerIndex];
 
-// Nhận kết quả đổ xúc xắc và cập nhật giao diện
-socket.on("diceRolled", (data) => {
-  const { player, roll } = data;
-  player_points[player] += roll;
-  dice_result.innerHTML += `${player} lắc ra ${roll}<br>`;
+  let randomDiceFace;
+  do {
+    randomDiceFace = dice_faces[Math.floor(Math.random() * dice_faces.length)];
+  } while (usedDiceFaces.includes(randomDiceFace));
+
+  usedDiceFaces.push(randomDiceFace);
+
+  const points = parseInt(randomDiceFace);
+  player_points[randomPlayer] += points;
+
+  const resultText = `${randomPlayer} lắc ra ${randomDiceFace}`;
+  dice_result.innerHTML += resultText + "<br>";
+
   currentPlayerIndex = (currentPlayerIndex + 1) % player_list.length;
 
   if (currentPlayerIndex === 0) {
+    // After all players have rolled, create a new round block
+    const roundBlock = document.createElement("div");
+    roundBlock.innerHTML = `<p>End round ${rounds}</p>${currentRoundResults.join(
+      "<br>"
+    )}<br><br>`;
+    dice_result.appendChild(roundBlock);
+
+    // Apply the rule to ensure unique scores for each player
+    applyUniqueScores();
+
+    // Save the current round scores for future comparison
+    previousScores = Object.values(player_points);
+
     rounds++;
     usedDiceFaces = [];
+    currentRoundResults = [];
   }
 
   updateScoreboard();
 });
 
+// Apply the rule to ensure unique scores for each player
+// Apply the rule to ensure unique scores for each player
 function applyUniqueScores() {
+  let allScores = Object.values(player_points);
   let seenScores = new Set();
+
+  // Create an array to store any changes
   let changes = [];
 
+  // Iterate through all player scores and find duplicates
   Object.keys(player_points).forEach((player) => {
     let score = player_points[player];
 
-    while (seenScores.has(score)) {
-      score++;
+    // If this score has already been seen, we need to adjust it
+    if (seenScores.has(score)) {
+      // Find a new unique score by decrementing the current score
+      while (seenScores.has(score)) {
+        score--;
+      }
+      player_points[player] = score;
+      changes.push(`${player} new score: ${score}`);
     }
-    player_points[player] = score;
-    seenScores.add(score);
-    changes.push(`${player} new score: ${score}`);
+
+    // Mark this score as seen
+    seenScores.add(player_points[player]);
   });
 
+  // If any score was adjusted, log it
   if (changes.length > 0) {
     console.log("Adjusted scores for uniqueness:", changes);
   }
