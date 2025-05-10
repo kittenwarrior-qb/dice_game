@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game Đổ Xúc Xắc</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1>Game Đổ Xúc Xắc</h1>
+    <input type="text" id="add_player_input" placeholder="Nhập tên người chơi và nhấn Enter" />
+    <button id="add_player_button">+ Thêm người chơi</button>
+    <button id="start_button" disabled>Bắt đầu trò chơi</button>
+
+    <div>
+        <h2>Danh sách người chơi</h2>
+        <ul id="player_list"  style="max-width: 450px;margin: 0 auto;"></ul>
+    </div>
+    <div id="gameArea" style="display: none;">
+      <div id="currentPlayer"></div>
+      <button id="roll_dice_button">Đổ xúc xắc</button>
+      <button id="reset_game_button">Reset trò chơi</button>
+      <div class="" id="dice_result"></div>
+      <div id="history"></div>
+      <div id="scoreboard"></div>
+
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
