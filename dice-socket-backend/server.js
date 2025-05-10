@@ -7,18 +7,17 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Cho phép mọi frontend kết nối (hoặc bạn thay bằng domain cụ thể)
+    origin: "*",
   },
 });
 
-let players = []; // [{ id, name, total }]
-let maxPlayers = 6;
+let players = [];
 
 io.on("connection", (socket) => {
   console.log(`🟢 ${socket.id} connected`);
 
   socket.on("joinGame", (name) => {
-    if (players.length >= maxPlayers) {
+    if (players.length >= 6) {
       socket.emit("joinError", "Room is full");
       return;
     }
@@ -49,6 +48,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log("🚀 Server is running");
+server.listen(3000, () => {
+  console.log("🚀 Server is running on http://localhost:3000");
 });
