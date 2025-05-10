@@ -1,53 +1,52 @@
-import express from "express";
-import http from "http";
-import { Server } from "socket.io";
-import cors from "cors";
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
+const io = socketIo(server);
 
 let players = [];
+let playerPoints = {};
+let currentPlayerIndex = 0;
+
+app.use(express.static("public"));
 
 io.on("connection", (socket) => {
-  console.log(`🟢 ${socket.id} connected`);
+  console.log("New player connected");
 
-  socket.on("joinGame", (name) => {
-    if (players.length >= 6) {
-      socket.emit("joinError", "Room is full");
-      return;
-    }
-
-    const player = { id: socket.id, name, total: 0 };
-    players.push(player);
-    io.emit("playersUpdate", players);
+  // Thêm người chơi
+  socket.on("addPlayer", (playerName) => {
+    players.push(playerName);
+    playerPoints[playerName] = 0;
+    io.emit("updatePlayerList", players); // Cập nhật danh sách người chơi cho tất cả client
   });
 
-  socket.on("rollDice", () => {
+  // Bắt đầu trò chơi
+  socket.on("startGame", () => {
+    io.emit("startGame"); // Phát ra sự kiện bắt đầu cho tất cả các client
+  });
+
+  // Xử lý đổ xúc xắc
+  socket.on("rollDice", (playerName) => {
     const roll = Math.floor(Math.random() * 6) + 1;
-    players = players.map((p) => {
-      if (p.id === socket.id) {
-        p.total += roll;
-      }
-      return p;
-    });
+    playerPoints[playerName] += roll;
 
-    const player = players.find((p) => p.id === socket.id);
-    io.emit("diceRolled", { player, roll });
-    io.emit("playersUpdate", players);
+    // Gửi kết quả đổ xúc xắc cho tất cả các client
+    io.emit("diceRolled", { player: playerName, roll });
+
+    // Tiến đến người chơi tiếp theo
+    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
   });
 
+  // Khi người chơi ngắt kết nối
   socket.on("disconnect", () => {
-    console.log(`🔴 ${socket.id} disconnected`);
-    players = players.filter((p) => p.id !== socket.id);
-    io.emit("playersUpdate", players);
+    console.log("Player disconnected");
+    players = players.filter((player) => player !== socket.id);
+    io.emit("updatePlayerList", players);
   });
 });
 
 server.listen(3000, () => {
-  console.log("🚀 Server is running on http://localhost:3000");
+  console.log("Server is running on http://localhost:3000");
 });
