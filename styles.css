@@ -10,6 +10,7 @@ ul li {
 body {
   margin: 0;
   font-family: "Quicksand", sans-serif;
+  height: 100vh;
   background-color: #fff5cc;
   color: #5b3e1d;
 }
